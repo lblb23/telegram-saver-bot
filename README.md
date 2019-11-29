@@ -32,3 +32,9 @@ rm -rf /home/{YOUR_USERNAME}/files/*
 ## Database of users
 
 This bot saves usernames and their chat_id to *db_users.json* for sending messages.
+
+## Main requirements
+
+* [instaloader](https://github.com/instaloader/instaloader)
+* [pytube](https://github.com/nficano/pytube)
+* [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot)
