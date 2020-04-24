@@ -1,4 +1,4 @@
-# Saver Telegram bot [Obsolete]
+# Saver Telegram bot
 Telegram bot for saving Youtube and Instagram content to mobile gallery. This bot sends you a video or photo and you can save it to the gallery on the phone.
 
 [Implementation (RU)](https://t.me/telesave_bot)
