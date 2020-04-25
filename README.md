@@ -29,12 +29,17 @@ python3 /home/{YOUR_USERNAME}/main.py
 rm -rf /home/{YOUR_USERNAME}/files/*
 ```
 
-## Database of users
+## Database of users and mailing
 
 This bot saves usernames and their chat_id to *db_users.json* for sending messages.
+
+You can send a message to all your users with this command:
+```
+python3 mailing_users.py --message "YOUR MESSAGE"
+```
 
 ## Main requirements
 
 * [instaloader](https://github.com/instaloader/instaloader)
-* [pytube](https://github.com/nficano/pytube)
+* [pytube3](https://github.com/get-pytube/pytube3)
 * [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot)
