@@ -38,10 +38,6 @@ from utils import (
 with open("config.yml") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
-telegram_token = config["telegram_token"]
-chatbase_token = config["chatbase_token"]
-admin_chat_id = config["admin_chat_id"]
-
 update_id = None
 
 logging.basicConfig(
@@ -56,7 +52,7 @@ db_users = TinyDB("db_users.json")
 
 
 def main():
-    updater = Updater(telegram_token, use_context=True)
+    updater = Updater(config["telegram_token"], use_context=True)
     dp = updater.dispatcher
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
@@ -235,7 +231,7 @@ def handle_message(update, context):
         )
 
         msg = Message(
-            api_key=chatbase_token,
+            api_key=config["chatbase_token"],
             platform=platform,
             user_id=username,
             message=url,
@@ -246,7 +242,7 @@ def handle_message(update, context):
         print(resp.ok)
 
         if not resp.ok:
-            bot = Bot(token=telegram_token)
+            bot = Bot(token=config["telegram_token"])
             msg = f"""
             Sending data to Chatbase failed:
             Platform: {platform}
@@ -255,14 +251,12 @@ def handle_message(update, context):
             Handled: {result}
             Reason: {reason}
             """
-            bot.send_message(chat_id=admin_chat_id, text=msg)
+            bot.send_message(chat_id=config["admin_chat_id"], text=msg)
 
         user_exist = db_users.search(query.user == update.message.from_user.name)
 
         if len(user_exist) == 0:
-            db_users.insert(
-                {"user": username, "chat_id": chat_id,}
-            )
+            db_users.insert({"user": username, "chat_id": chat_id})
 
 
 if __name__ == "__main__":
