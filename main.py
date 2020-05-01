@@ -86,7 +86,6 @@ def handle_message(update, context):
     if update.message:
         username = update.message.from_user.name
         chat_id = update.message.chat.id
-
         url = update.message.text
 
         if check_instagram(url):

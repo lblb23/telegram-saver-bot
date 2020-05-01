@@ -109,6 +109,8 @@ def send_instagram_data(
     flag, post = get_insta_links(url)
 
     contents = []
+    result = False
+    reason = ""
 
     try:
         for node in post.get_sidecar_nodes():
@@ -143,8 +145,8 @@ def send_instagram_data(
                 context.bot.send_message(chat_id=chat_id, text=post.caption)
 
             result = True
+            reason = "Success"
         else:
-            reason = "Instagram error"
             context.bot.sendMessage(
                 chat_id=chat_id, text=messages['invalid_url'],
             )
@@ -244,6 +246,8 @@ def send_youtube_button(
     :return: success status and reason if failed
     """
     flag, streams, video_id = get_youtube_resolutions(url)
+    result = False
+    reason = ""
 
     if flag:
 
@@ -264,6 +268,7 @@ def send_youtube_button(
             chat_id, text=messages['choice_resolution'], reply_markup=reply_markup,
         )
         result = True
+        reason = "Success"
     else:
         context.bot.sendMessage(
             chat_id, messages['invalid_url'],
