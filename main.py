@@ -1,22 +1,15 @@
 # -*- coding: utf-8 -*-
 import argparse
 import logging
-import os
 import ssl
 import time
-from shutil import rmtree
 
 import yaml
 
+# Mac OS SSL problem
 ssl._create_default_https_context = ssl._create_unverified_context
 
 from chatbase import Message
-from telegram import (
-    InputMediaPhoto,
-    InputMediaVideo,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
 from telegram.ext import (
     Updater,
     CommandHandler,
@@ -27,12 +20,12 @@ from telegram.ext import (
 from tinydb import TinyDB, Query
 
 from utils import (
-    get_insta_links,
     check_instagram,
     check_youtube,
-    get_youtube_resolutions,
-    download_yt_video,
-    get_yt_link_by_res,
+    send_instagram_data,
+    send_youtube_button,
+    handle_youtube_button,
+    send_error_message,
 )
 
 parser = argparse.ArgumentParser()
@@ -57,6 +50,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 query = Query()
 db_users = TinyDB("db_users.json")
+messages = config["messages"]
 
 
 def main():
@@ -72,15 +66,11 @@ def main():
 
 
 def start(update, context):
-    update.message.reply_text(
-        "Hello! I can download for you a picture or video from Instagram and Youtube. Just send me a link to the post."
-    )
+    update.message.reply_text(messages.start)
 
 
 def help(update, context):
-    update.message.reply_text(
-        "Just send me a link to an Instagram post or Youtube video."
-    )
+    update.message.reply_text(messages.help)
 
 
 def error(update, context):
@@ -88,40 +78,10 @@ def error(update, context):
 
 
 def button(update, context):
-    query = update.callback_query
-
-    context.bot.deleteMessage(query.from_user.id, query.message.message_id)
-
-    social_network, video_id, res, size = query.data.split("--")
-
-    if float(size) > 50:
-        if social_network == "yt":
-            url = get_yt_link_by_res(video_id, res)
-        context.bot.send_message(
-            chat_id=query.from_user.id,
-            parse_mode="Markdown",
-            text="Telegram allows to send video only up to 50 mb, so we can only give a direct link: [link]("
-            + url
-            + ")",
-        )
-    else:
-        context.bot.send_message(query.from_user.id, "Your video is loading ...")
-
-        if "yt" in social_network:
-            flag, path = download_yt_video(video_id, res)
-
-        video_file = open(path, "rb")
-        context.bot.send_video(
-            update.callback_query.from_user.id, video_file, timeout=200
-        )
-
-        rmtree(os.path.join("files", path.split("/")[1]), ignore_errors=True)
+    handle_youtube_button(update, context, messages)
 
 
 def handle_message(update, context):
-    result = False
-    reason = ""
-    platform = ""
 
     if update.message:
         username = update.message.from_user.name
@@ -130,104 +90,16 @@ def handle_message(update, context):
         url = update.message.text
 
         if check_instagram(url):
-            flag, post = get_insta_links(url)
             platform = "Instagram"
-
-            contents = []
-
-            try:
-                for node in post.get_sidecar_nodes():
-                    contents.append(node)
-
-                if flag:
-
-                    media_group = []
-                    context.bot.send_message(
-                        chat_id=chat_id, text="Your data is loading ..."
-                    )
-
-                    if len(contents):
-                        for node in contents:
-                            if node.is_video:
-                                media_group.append(InputMediaVideo(node.video_url))
-                            else:
-                                media_group.append(InputMediaPhoto(node.display_url))
-                        context.bot.sendMediaGroup(
-                            chat_id=chat_id, media=media_group, timeout=200
-                        )
-                    else:
-                        if post.is_video:
-
-                            context.bot.sendMediaGroup(
-                                chat_id=chat_id,
-                                media=[InputMediaVideo(post.video_url)],
-                                timeout=200,
-                            )
-                        else:
-                            context.bot.sendMediaGroup(
-                                chat_id=chat_id,
-                                media=[InputMediaPhoto(post.url)],
-                                timeout=200,
-                            )
-
-                    if post.caption:
-                        context.bot.send_message(chat_id=chat_id, text=post.caption)
-
-                    result = True
-                else:
-                    reason = "Instagram error"
-                    context.bot.sendMessage(
-                        chat_id=chat_id,
-                        text="Invalid link. Check if the post is public.",
-                    )
-            except Exception as e:
-                print(str(e))
-                context.bot.sendMessage(
-                    chat_id=chat_id, text="Invalid link. Check if the post is public."
-                )
-
+            result, reason = send_instagram_data(context, chat_id, url, messages)
         elif check_youtube(url):
-            flag, streams, video_id = get_youtube_resolutions(url)
             platform = "YouTube"
-
-            if flag:
-
-                keyboard = []
-
-                for stream in streams:
-                    text = stream.res.split(".")[0] + " (" + str(stream.size) + " MB)"
-                    callback_data = (
-                        "yt"
-                        + "--"
-                        + video_id
-                        + "--"
-                        + stream.res
-                        + "--"
-                        + str(stream.size)
-                    )
-                    keyboard.append(
-                        [InlineKeyboardButton(text=text, callback_data=callback_data)]
-                    )
-
-                reply_markup = InlineKeyboardMarkup(keyboard)
-
-                context.bot.send_message(
-                    chat_id, text="Choose resolution", reply_markup=reply_markup,
-                )
-                result = True
-            else:
-                context.bot.sendMessage(
-                    chat_id, "Invalid link. Check if the video is public.",
-                )
-                reason = "Youtube error"
-
+            result, reason = send_youtube_button(context, chat_id, url, messages)
         else:
-            context.bot.sendMessage(
-                chat_id=chat_id, text="Invalid link. Check if the post is public."
-            )
-            reason = "Invalid URL"
             platform = "Unknown"
+            result, reason = send_error_message(context, chat_id, messages)
 
+        # Print to pythonanywhere log
         print(
             username,
             url,
@@ -238,6 +110,7 @@ def handle_message(update, context):
             flush=True,
         )
 
+        # Send data to chatbase
         msg = Message(
             api_key=config["chatbase_token"],
             platform=platform,
@@ -247,8 +120,8 @@ def handle_message(update, context):
         )
         msg.send()
 
-        user_exist = db_users.search(query.user == update.message.from_user.name)
-
+        # Add user and their chat id to database if not exists
+        user_exist = db_users.search(query.user == username)
         if len(user_exist) == 0:
             db_users.insert({"user": username, "chat_id": chat_id})
 

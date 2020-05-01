@@ -1,11 +1,20 @@
 import os
 import random
+from shutil import rmtree
 
 import instaloader
 import requests
 from bs4 import BeautifulSoup
 from instaloader import Post
 from pytube import YouTube
+from telegram import (
+    Update,
+    InputMediaPhoto,
+    InputMediaVideo,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
+from telegram.ext import CallbackContext
 
 L = instaloader.Instaloader(
     sleep=True,
@@ -80,6 +89,70 @@ def get_insta_links(url: str) -> tuple:
     except Exception as e:
         print(str(e))
         return False, []
+
+
+def send_instagram_data(
+    context: CallbackContext, chat_id: int, url: str, messages: dict
+) -> tuple:
+    """
+    Send instagram data to user with chat_id
+    1. Get nodes from post
+    2. Send to user loading message
+    3. If post contains >0 nodes then collect media group and send
+    4. If post contains 0 nodes - it's can be video, try to send video
+    :param context: callbacl context
+    :param chat_id: chat id with user
+    :param url: messsage from user
+    :param messages: dict with templates of messages
+    :return: success status and reason if failed
+    """
+    flag, post = get_insta_links(url)
+
+    contents = []
+
+    try:
+        for node in post.get_sidecar_nodes():
+            contents.append(node)
+
+        if flag:
+            media_group = []
+            context.bot.send_message(chat_id=chat_id, text=messages['loading'])
+
+            if len(contents):
+                for node in contents:
+                    if node.is_video:
+                        media_group.append(InputMediaVideo(node.video_url))
+                    else:
+                        media_group.append(InputMediaPhoto(node.display_url))
+                context.bot.sendMediaGroup(
+                    chat_id=chat_id, media=media_group, timeout=200
+                )
+            else:
+                if post.is_video:
+                    context.bot.sendMediaGroup(
+                        chat_id=chat_id,
+                        media=[InputMediaVideo(post.video_url)],
+                        timeout=200,
+                    )
+                else:
+                    context.bot.sendMediaGroup(
+                        chat_id=chat_id, media=[InputMediaPhoto(post.url)], timeout=200
+                    )
+
+            if post.caption:
+                context.bot.send_message(chat_id=chat_id, text=post.caption)
+
+            result = True
+        else:
+            reason = "Instagram error"
+            context.bot.sendMessage(
+                chat_id=chat_id, text=messages['invalid_url'],
+            )
+    except Exception as e:
+        print(str(e))
+        context.bot.sendMessage(chat_id=chat_id, text=messages['invalid_url'])
+
+    return result, reason
 
 
 def get_youtube_resolutions(url: str) -> tuple:
@@ -157,3 +230,94 @@ def download_yt_video(video_id: str, res: str) -> tuple:
     )
 
     return True, filepath
+
+
+def send_youtube_button(
+    context: CallbackContext, chat_id: int, url: str, messages: dict
+) -> tuple:
+    """
+    Send video user
+    :param context: callback context
+    :param chat_id: chat id with user
+    :param url: message from user
+    :param messages: dict with templates of messages
+    :return: success status and reason if failed
+    """
+    flag, streams, video_id = get_youtube_resolutions(url)
+
+    if flag:
+
+        keyboard = []
+
+        for stream in streams:
+            text = stream.res.split(".")[0] + " (" + str(stream.size) + " MB)"
+            callback_data = (
+                "yt" + "--" + video_id + "--" + stream.res + "--" + str(stream.size)
+            )
+            keyboard.append(
+                [InlineKeyboardButton(text=text, callback_data=callback_data)]
+            )
+
+        reply_markup = InlineKeyboardMarkup(keyboard)
+
+        context.bot.send_message(
+            chat_id, text=messages['choice_resolution'], reply_markup=reply_markup,
+        )
+        result = True
+    else:
+        context.bot.sendMessage(
+            chat_id, messages['invalid_url'],
+        )
+        reason = "Youtube error"
+
+    return result, reason
+
+
+def handle_youtube_button(update: Update, context: CallbackContext, messages: dict):
+    """
+    Handle answer from youtube button
+    :param update: telegram update
+    :param context: telegram context
+    :param messages: dict with templates of messages
+    :return:
+    """
+    query = update.callback_query
+    context.bot.deleteMessage(query.from_user.id, query.message.message_id)
+
+    social_network, video_id, res, size = query.data.split("--")
+
+    if float(size) > 50:
+        if social_network == "yt":
+            url = get_yt_link_by_res(video_id, res)
+        context.bot.send_message(
+            chat_id=query.from_user.id,
+            parse_mode="Markdown",
+            text=messages['size_limit'].format(url),
+        )
+    else:
+        context.bot.send_message(query.from_user.id, messages['loading'])
+
+        if "yt" in social_network:
+            flag, path = download_yt_video(video_id, res)
+
+        video_file = open(path, "rb")
+        context.bot.send_video(
+            update.callback_query.from_user.id, video_file, timeout=200
+        )
+
+        rmtree(os.path.join("files", path.split("/")[1]), ignore_errors=True)
+
+
+def send_error_message(context: CallbackContext, chat_id: int, messages: dict) -> tuple:
+    """
+    Send error message
+    :param context: telegram context
+    :param chat_id: chat id with user
+    :param messages: dict with templates of messages
+    :return: fail status and reason
+    """
+    context.bot.sendMessage(chat_id=chat_id, text=messages['invalid_url'])
+    result = False
+    reason = "Invalid URL"
+
+    return result, reason

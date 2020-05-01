@@ -1,6 +1,16 @@
-telegram_token: <<value>> # Telegram token id
+telegram_token: <value> # Telegram token id
 chatbase_token: <value> # Chatbase token for store statistic
 pause_mailing: 10 # Delay between messages in mailing
+
+# Messages for events
+messages:
+  start: "Hello! I can download for you a picture or video from Instagram and Youtube. Just send me a link to the post."
+  help: "Just send me a link to an Instagram post or Youtube video."
+  loading: "Your data is loading ..."
+  size_limit: "Telegram allows to send video only up to 50 mb, so we can only give a direct link: [link]({})"
+  invalid_url: "Invalid link. Check if the post is public."
+  choice_resolution: "Choose resolution"
+
 
 # Try to store users on mysql database
 # Not working
