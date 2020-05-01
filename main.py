@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import argparse
 import logging
 import os
 import ssl
@@ -34,7 +35,15 @@ from utils import (
     get_yt_link_by_res,
 )
 
-with open("config.yml") as file:
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--config_path", default="config.yml", dest="config_path", help="Path to config"
+)
+
+args = parser.parse_args()
+config_path = args.config_path
+
+with open(config_path) as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
 update_id = None
