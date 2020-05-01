@@ -20,9 +20,9 @@ db_users = TinyDB("db_users.json")
 with open("config.yml") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
-bot = telegram.Bot(token=config["TOKEN"])
-pause = config["PAUSE"]
+bot = telegram.Bot(token=config["telegram_token"])
+pause = config["pause_mailing"]
 
 for chat in tqdm(db_users.all()):
     bot.send_message(chat["chat_id"], message)
-    sleep(10)
+    sleep(pause)

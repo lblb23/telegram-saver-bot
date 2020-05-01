@@ -5,14 +5,17 @@ import ssl
 import time
 from shutil import rmtree
 
+import yaml
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
-import yaml
+from chatbase import Message
 from telegram import (
     InputMediaPhoto,
     InputMediaVideo,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    Bot,
 )
 from telegram.ext import (
     Updater,
@@ -35,7 +38,9 @@ from utils import (
 with open("config.yml") as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
 
-TOKEN = config["TOKEN"]
+telegram_token = config["telegram_token"]
+chatbase_token = config["chatbase_token"]
+admin_chat_id = config["admin_chat_id"]
 
 update_id = None
 
@@ -46,28 +51,19 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
 query = Query()
-
 db_users = TinyDB("db_users.json")
 
 
 def main():
-    updater = Updater(TOKEN, use_context=True)
-
+    updater = Updater(telegram_token, use_context=True)
     dp = updater.dispatcher
-
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
-
     dp.add_handler(MessageHandler(Filters.text, handle_message))
-
     dp.add_handler(CallbackQueryHandler(button))
-
     dp.add_error_handler(error)
-
     updater.start_polling()
-
     updater.idle()
 
 
@@ -119,15 +115,19 @@ def button(update, context):
 
 
 def handle_message(update, context):
-    result = 0
+    result = False
     reason = ""
+    platform = ""
 
     if update.message:
+        username = update.message.from_user.name
+        chat_id = update.message.chat.id
 
         url = update.message.text
 
         if check_instagram(url):
             flag, post = get_insta_links(url)
+            platform = "Instagram"
 
             contents = []
 
@@ -139,52 +139,52 @@ def handle_message(update, context):
 
                     media_group = []
                     context.bot.send_message(
-                        update.message.chat.id, "Your data is loading ..."
+                        chat_id=chat_id, text="Your data is loading ..."
                     )
 
                     if len(contents):
                         for node in contents:
                             if node.is_video:
-                                # print(node.video_url)
                                 media_group.append(InputMediaVideo(node.video_url))
                             else:
                                 media_group.append(InputMediaPhoto(node.display_url))
                         context.bot.sendMediaGroup(
-                            update.message.chat.id, media_group, timeout=200
+                            chat_id=chat_id, media=media_group, timeout=200
                         )
                     else:
                         if post.is_video:
 
                             context.bot.sendMediaGroup(
-                                update.message.chat.id,
-                                [InputMediaVideo(post.video_url)],
+                                chat_id=chat_id,
+                                media=[InputMediaVideo(post.video_url)],
                                 timeout=200,
                             )
                         else:
                             context.bot.sendMediaGroup(
-                                update.message.chat.id,
-                                [InputMediaPhoto(post.url)],
+                                chat_id=chat_id,
+                                media=[InputMediaPhoto(post.url)],
                                 timeout=200,
                             )
 
                     if post.caption:
-                        context.bot.send_message(update.message.chat.id, post.caption)
+                        context.bot.send_message(chat_id=chat_id, text=post.caption)
 
-                    result = 1
+                    result = True
                 else:
                     reason = "Instagram error"
                     context.bot.sendMessage(
-                        update.message.chat.id,
-                        "Invalid link. Check if the post is public.",
+                        chat_id=chat_id,
+                        text="Invalid link. Check if the post is public.",
                     )
             except Exception as e:
                 print(str(e))
                 context.bot.sendMessage(
-                    update.message.chat.id, "Invalid link. Check if the post is public."
+                    chat_id=chat_id, text="Invalid link. Check if the post is public."
                 )
 
         elif check_youtube(url):
             flag, streams, video_id = get_youtube_resolutions(url)
+            platform = "YouTube"
 
             if flag:
 
@@ -208,27 +208,25 @@ def handle_message(update, context):
                 reply_markup = InlineKeyboardMarkup(keyboard)
 
                 context.bot.send_message(
-                    update.message.chat.id,
-                    text="Choose resolution",
-                    reply_markup=reply_markup,
+                    chat_id, text="Choose resolution", reply_markup=reply_markup,
                 )
-                result = 1
+                result = True
             else:
                 context.bot.sendMessage(
-                    update.message.chat.id,
-                    "Invalid link. Check if the video is public.",
+                    chat_id, "Invalid link. Check if the video is public.",
                 )
                 reason = "Youtube error"
 
         else:
             context.bot.sendMessage(
-                update.message.chat.id, "Invalid link. Check if the post is public."
+                chat_id=chat_id, text="Invalid link. Check if the post is public."
             )
             reason = "Invalid URL"
+            platform = "Unknown"
 
         print(
-            update.message.from_user.name,
-            update.message.text,
+            username,
+            url,
             time.ctime(int(time.time())),
             result,
             reason,
@@ -236,14 +234,34 @@ def handle_message(update, context):
             flush=True,
         )
 
+        msg = Message(
+            api_key=chatbase_token,
+            platform=platform,
+            user_id=username,
+            message=url,
+            not_handled=~result,
+        )
+
+        resp = msg.send()
+        print(resp.ok)
+
+        if not resp.ok:
+            bot = Bot(token=telegram_token)
+            msg = f"""
+            Sending data to Chatbase failed:
+            Platform: {platform}
+            User_id: {username}
+            Message: {url}
+            Handled: {result}
+            Reason: {reason}
+            """
+            bot.send_message(chat_id=admin_chat_id, text=msg)
+
         user_exist = db_users.search(query.user == update.message.from_user.name)
 
         if len(user_exist) == 0:
             db_users.insert(
-                {
-                    "user": update.message.from_user.name,
-                    "chat_id": update.message.chat.id,
-                }
+                {"user": username, "chat_id": chat_id,}
             )
 
 
