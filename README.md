@@ -7,8 +7,9 @@ Telegram bot for saving Youtube and Instagram content to mobile gallery. This bo
 
 1. Create own telegram bot. Manual: https://core.telegram.org/bots
 2. Insert your bot token to config.yml.
-3. Install requirements.
-4. Run main.py.
+3. Register on https://chatbase.com/ for storing bot usage statistics and insert chatbase token
+4. Install requirements.
+5. Run main.py.
 ```
 python3 main.py
 ```

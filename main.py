@@ -15,7 +15,6 @@ from telegram import (
     InputMediaVideo,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    Bot,
 )
 from telegram.ext import (
     Updater,
@@ -237,21 +236,7 @@ def handle_message(update, context):
             message=url,
             not_handled=~result,
         )
-
-        resp = msg.send()
-        print(resp.ok)
-
-        if not resp.ok:
-            bot = Bot(token=config["telegram_token"])
-            msg = f"""
-            Sending data to Chatbase failed:
-            Platform: {platform}
-            User_id: {username}
-            Message: {url}
-            Handled: {result}
-            Reason: {reason}
-            """
-            bot.send_message(chat_id=config["admin_chat_id"], text=msg)
+        msg.send()
 
         user_exist = db_users.search(query.user == update.message.from_user.name)
 
