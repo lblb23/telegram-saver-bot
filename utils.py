@@ -336,8 +336,6 @@ def send_unsupported_message(
     :param platform: platform name
     :return: fail status and reason
     """
-    print(messages)
-    print(f"unsupported_{platform.lower()}")
     context.bot.send_message(
         chat_id=chat_id, text=messages[f"unsupported_{platform.lower()}"]
     )
