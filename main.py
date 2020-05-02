@@ -66,11 +66,11 @@ def main():
 
 
 def start(update, context):
-    update.message.reply_text(messages.start)
+    update.message.reply_text(messages['start'])
 
 
 def help(update, context):
-    update.message.reply_text(messages.help)
+    update.message.reply_text(messages['help'])
 
 
 def error(update, context):
