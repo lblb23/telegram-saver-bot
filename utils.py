@@ -266,10 +266,10 @@ def send_youtube_button(
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         context.bot.send_message(
-            chat_id, text=messages["choice_resolution"], reply_markup=reply_markup
+            chat_id=chat_id, text=messages["choice_resolution"], reply_markup=reply_markup
         )
     else:
-        context.bot.sendMessage(chat_id, messages["invalid_url"])
+        context.bot.sendMessage(chat_id=chat_id, text=messages["invalid_url"])
 
     return result, traceback
 
@@ -296,13 +296,13 @@ def handle_youtube_button(update: Update, context: CallbackContext, messages: di
             text=messages["size_limit"].format(url),
         )
     else:
-        context.bot.send_message(query.from_user.id, messages["loading"])
+        context.bot.send_message(chat_id=query.from_user.id, text=messages["loading"])
 
         flag, path = download_yt_video(video_id, res)
 
         video_file = open(path, "rb")
         context.bot.send_video(
-            update.callback_query.from_user.id, video_file, timeout=200
+            chat_id=update.callback_query.from_user.id, video=video_file, timeout=200
         )
 
         rmtree(os.path.join("files", path.split("/")[1]), ignore_errors=True)
@@ -316,7 +316,7 @@ def send_error_message(context: CallbackContext, chat_id: int, messages: dict) -
     :param messages: dict with templates of messages
     :return: fail status and reason
     """
-    context.bot.sendMessage(chat_id=chat_id, text=messages["invalid_url"])
+    context.bot.send_message(chat_id=chat_id, text=messages["invalid_url"])
     result = False
     traceback = "Invalid URL"
 
