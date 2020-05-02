@@ -28,5 +28,5 @@ bot = telegram.Bot(token=config["telegram_token"])
 pause = config["pause_mailing"]
 
 for chat in tqdm(db_users.all()):
-    bot.send_message(chat["chat_id"], message)
+    bot.send_message(chat_id=chat["chat_id"], text=message)
     sleep(pause)
