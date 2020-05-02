@@ -21,6 +21,9 @@ nohup python3 main.py & tail -f nohup.out
 
 1. Sign up on [pythonanywhere.com](https://www.pythonanywhere.com/).
 2. Upload files to server.
+```
+git clone https://github.com/lbulygin/telegram-saver-bot
+```
 3. Add always-on task:
 ```
 python3 /home/{YOUR_USERNAME}/main.py
