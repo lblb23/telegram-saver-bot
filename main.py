@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
 import argparse
 import logging
-import ssl
 import time
 
 import yaml
-
-# Mac OS SSL problem
-ssl._create_default_https_context = ssl._create_unverified_context
-
 from chatbase import Message
 from telegram.ext import (
     Updater,
@@ -27,6 +22,10 @@ from utils import (
     handle_youtube_button,
     send_error_message,
 )
+
+# Mac OS SSL problem
+# import ssl
+# ssl._create_default_https_context = ssl._create_unverified_context
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
