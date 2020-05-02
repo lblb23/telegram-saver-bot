@@ -21,6 +21,7 @@ from utils import (
     send_youtube_button,
     handle_youtube_button,
     send_error_message,
+    send_unsupported_message,
 )
 
 # Mac OS SSL problem
@@ -65,11 +66,11 @@ def main():
 
 
 def start(update, context):
-    update.message.reply_text(messages['start'])
+    update.message.reply_text(messages["start"])
 
 
 def help(update, context):
-    update.message.reply_text(messages['help'])
+    update.message.reply_text(messages["help"])
 
 
 def error(update, context):
@@ -89,10 +90,20 @@ def handle_message(update, context):
 
         if check_instagram(url):
             platform = "Instagram"
-            result, traceback = send_instagram_data(context, chat_id, url, messages)
+            if config["handle_instagram"]:
+                result, traceback = send_instagram_data(context, chat_id, url, messages)
+            else:
+                result, traceback = send_unsupported_message(
+                    context, chat_id, messages, platform
+                )
         elif check_youtube(url):
             platform = "YouTube"
-            result, traceback = send_youtube_button(context, chat_id, url, messages)
+            if config["handle_youtube"]:
+                result, traceback = send_youtube_button(context, chat_id, url, messages)
+            else:
+                result, traceback = send_unsupported_message(
+                    context, chat_id, messages, platform
+                )
         else:
             platform = "Unknown"
             result, traceback = send_error_message(context, chat_id, messages)

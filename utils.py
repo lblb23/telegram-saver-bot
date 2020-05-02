@@ -266,7 +266,9 @@ def send_youtube_button(
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         context.bot.send_message(
-            chat_id=chat_id, text=messages["choice_resolution"], reply_markup=reply_markup
+            chat_id=chat_id,
+            text=messages["choice_resolution"],
+            reply_markup=reply_markup,
         )
     else:
         context.bot.sendMessage(chat_id=chat_id, text=messages["invalid_url"])
@@ -319,5 +321,29 @@ def send_error_message(context: CallbackContext, chat_id: int, messages: dict) -
     context.bot.send_message(chat_id=chat_id, text=messages["invalid_url"])
     result = False
     traceback = "Invalid URL"
+
+    return result, traceback
+
+
+def send_unsupported_message(
+    context: CallbackContext, chat_id: int, messages: dict, platform: str
+) -> tuple:
+    """
+    Send error message about unsupported platform
+    :param context: telegram context
+    :param chat_id: chat id with user
+    :param messages: dict with templates of messages
+    :param platform: platform name
+    :return: fail status and reason
+    """
+    print(messages)
+    print(f"unsupported_{platform.lower()}")
+    context.bot.send_message(
+        chat_id=chat_id, text=messages[f"unsupported_{platform.lower()}"]
+    )
+    print(messages)
+    print(f"unsupported_{platform.lower()}")
+    result = False
+    traceback = "Unsupported platform"
 
     return result, traceback
