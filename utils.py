@@ -158,6 +158,50 @@ def send_instagram_data(
     return result, traceback
 
 
+def send_youtube_data(
+    context: CallbackContext, chat_id: int, url: str, messages: dict
+) -> tuple:
+    """
+    NOT USED
+    Send video with highest resolution and filesize < 50mb
+    :param context: callback context
+    :param chat_id: chat id with user
+    :param url: messsage from user
+    :param messages: dict with templates of messages
+    :return: success status and reason if failed
+    """
+    yt = YouTube(url)
+
+    try:
+        stream_found = False
+        stream = None
+        for stream in (
+            yt.streams.filter(subtype="mp4", audio_codec="mp4a.40.2")
+            .order_by("filesize")
+            .desc()
+        ):
+            if stream.filesize / 1000000 < 49:
+                stream_found = True
+                break
+            else:
+                continue
+
+        if stream_found:
+            context.bot.send_video(chat_id=chat_id, video=stream.url, timeout=10)
+            result = True
+            traceback = "Success"
+        else:
+            context.bot.send_message(chat_id=chat_id, text=messages["error_youtube"])
+            result = False
+            traceback = "Not found suitable stream for uploading"
+    except Exception as e:
+        result = False
+        traceback = str(e)
+        context.bot.sendMessage(chat_id=chat_id, text=messages["invalid_url"])
+
+    return result, traceback
+
+
 def get_youtube_resolutions(url: str) -> tuple:
     """
     Return list of available resolutions and video_id from youtube URL
@@ -182,7 +226,7 @@ def get_youtube_resolutions(url: str) -> tuple:
                 )
 
         result = True
-        traceback = "No error"
+        traceback = "Success"
     except Exception as e:
         result = False
         available_resolutions = []
@@ -339,8 +383,6 @@ def send_unsupported_message(
     context.bot.send_message(
         chat_id=chat_id, text=messages[f"unsupported_{platform.lower()}"]
     )
-    print(messages)
-    print(f"unsupported_{platform.lower()}")
     result = False
     traceback = "Unsupported platform"
 

@@ -10,6 +10,7 @@ messages:
   size_limit: "Telegram allows to send video only up to 50 mb, so we can only give a direct link: [link]({})"
   invalid_url: "Invalid link. Check if the post is public."
   choice_resolution: "Choose resolution"
+  error_youtube: "Unfortunately, this video cannot be downloaded."
   unsupported_youtube: "Unfortunately, we disabled YouTube support due to the high load."
   unsupported_instagram: "Unfortunately, we disabled Instagram support due to the high load."
 

@@ -21,7 +21,7 @@ from utils import (
     send_youtube_button,
     handle_youtube_button,
     send_error_message,
-    send_unsupported_message,
+    send_unsupported_message
 )
 
 # Mac OS SSL problem
@@ -100,6 +100,7 @@ def handle_message(update, context):
             platform = "YouTube"
             if config["handle_youtube"]:
                 result, traceback = send_youtube_button(context, chat_id, url, messages)
+                #result, traceback = send_youtube_data(context, chat_id, url, messages)
             else:
                 result, traceback = send_unsupported_message(
                     context, chat_id, messages, platform
