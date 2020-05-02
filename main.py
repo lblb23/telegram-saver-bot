@@ -90,13 +90,13 @@ def handle_message(update, context):
 
         if check_instagram(url):
             platform = "Instagram"
-            result, reason = send_instagram_data(context, chat_id, url, messages)
+            result, traceback = send_instagram_data(context, chat_id, url, messages)
         elif check_youtube(url):
             platform = "YouTube"
-            result, reason = send_youtube_button(context, chat_id, url, messages)
+            result, traceback = send_youtube_button(context, chat_id, url, messages)
         else:
             platform = "Unknown"
-            result, reason = send_error_message(context, chat_id, messages)
+            result, traceback = send_error_message(context, chat_id, messages)
 
         # Print to pythonanywhere log
         print(
@@ -104,7 +104,7 @@ def handle_message(update, context):
             url,
             time.ctime(int(time.time())),
             result,
-            reason,
+            traceback,
             sep="    ",
             flush=True,
         )

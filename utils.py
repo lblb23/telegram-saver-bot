@@ -100,7 +100,7 @@ def send_instagram_data(
     2. Send to user loading message
     3. If post contains >0 nodes then collect media group and send
     4. If post contains 0 nodes - it's can be video, try to send video
-    :param context: callbacl context
+    :param context: callback context
     :param chat_id: chat id with user
     :param url: messsage from user
     :param messages: dict with templates of messages
@@ -109,8 +109,6 @@ def send_instagram_data(
     flag, post = get_insta_links(url)
 
     contents = []
-    result = False
-    reason = ""
 
     try:
         for node in post.get_sidecar_nodes():
@@ -118,7 +116,7 @@ def send_instagram_data(
 
         if flag:
             media_group = []
-            context.bot.send_message(chat_id=chat_id, text=messages['loading'])
+            context.bot.send_message(chat_id=chat_id, text=messages["loading"])
 
             if len(contents):
                 for node in contents:
@@ -145,26 +143,28 @@ def send_instagram_data(
                 context.bot.send_message(chat_id=chat_id, text=post.caption)
 
             result = True
-            reason = "Success"
+            traceback = "Success"
         else:
+            result = False
+            traceback = "Instagram: Failed with loading data"
             context.bot.sendMessage(
-                chat_id=chat_id, text=messages['invalid_url'],
+                chat_id=chat_id, text=messages["invalid_url"],
             )
     except Exception as e:
-        print(str(e))
-        context.bot.sendMessage(chat_id=chat_id, text=messages['invalid_url'])
+        result = False
+        traceback = str(e)
+        context.bot.sendMessage(chat_id=chat_id, text=messages["invalid_url"])
 
-    return result, reason
+    return result, traceback
 
 
 def get_youtube_resolutions(url: str) -> tuple:
     """
     Return list of available resolutions and video_id from youtube URL
     :param url: URL
-    :return: success status, list of available resolutions and video_id
+    :return: success status, list of available resolutions, video_id and error traceback
     """
     try:
-
         available_resolutions = []
 
         yt = YouTube(url)
@@ -181,12 +181,15 @@ def get_youtube_resolutions(url: str) -> tuple:
                     Video_info(res=res, size=int(filter_streams[0].filesize / 1000000))
                 )
 
-        return True, available_resolutions, video_id
-
+        result = True
+        traceback = "No error"
     except Exception as e:
+        result = False
+        available_resolutions = []
+        video_id = ""
+        traceback = str(e)
 
-        print(str(e))
-        return False, [], ""
+    return result, available_resolutions, video_id, traceback
 
 
 def get_yt_link_by_res(video_id: str, res: str) -> str:
@@ -245,11 +248,9 @@ def send_youtube_button(
     :param messages: dict with templates of messages
     :return: success status and reason if failed
     """
-    flag, streams, video_id = get_youtube_resolutions(url)
-    result = False
-    reason = ""
+    result, streams, video_id, traceback = get_youtube_resolutions(url)
 
-    if flag:
+    if result:
 
         keyboard = []
 
@@ -265,17 +266,12 @@ def send_youtube_button(
         reply_markup = InlineKeyboardMarkup(keyboard)
 
         context.bot.send_message(
-            chat_id, text=messages['choice_resolution'], reply_markup=reply_markup,
+            chat_id, text=messages["choice_resolution"], reply_markup=reply_markup
         )
-        result = True
-        reason = "Success"
     else:
-        context.bot.sendMessage(
-            chat_id, messages['invalid_url'],
-        )
-        reason = "Youtube error"
+        context.bot.sendMessage(chat_id, messages["invalid_url"])
 
-    return result, reason
+    return result, traceback
 
 
 def handle_youtube_button(update: Update, context: CallbackContext, messages: dict):
@@ -292,18 +288,17 @@ def handle_youtube_button(update: Update, context: CallbackContext, messages: di
     social_network, video_id, res, size = query.data.split("--")
 
     if float(size) > 50:
-        if social_network == "yt":
-            url = get_yt_link_by_res(video_id, res)
+        url = get_yt_link_by_res(video_id, res)
+
         context.bot.send_message(
             chat_id=query.from_user.id,
             parse_mode="Markdown",
-            text=messages['size_limit'].format(url),
+            text=messages["size_limit"].format(url),
         )
     else:
-        context.bot.send_message(query.from_user.id, messages['loading'])
+        context.bot.send_message(query.from_user.id, messages["loading"])
 
-        if "yt" in social_network:
-            flag, path = download_yt_video(video_id, res)
+        flag, path = download_yt_video(video_id, res)
 
         video_file = open(path, "rb")
         context.bot.send_video(
@@ -321,8 +316,8 @@ def send_error_message(context: CallbackContext, chat_id: int, messages: dict) -
     :param messages: dict with templates of messages
     :return: fail status and reason
     """
-    context.bot.sendMessage(chat_id=chat_id, text=messages['invalid_url'])
+    context.bot.sendMessage(chat_id=chat_id, text=messages["invalid_url"])
     result = False
-    reason = "Invalid URL"
+    traceback = "Invalid URL"
 
-    return result, reason
+    return result, traceback
