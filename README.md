@@ -26,11 +26,11 @@ git clone https://github.com/lbulygin/telegram-saver-bot
 ```
 3. Add always-on task:
 ```
-python3 /home/{YOUR_USERNAME}/main.py
+python3 /home/{YOUR_USERNAME}/telegram-saver-bot/main.py
 ```
 4. Add daily scheduled task for purging cache folder:
 ```
-rm -rf /home/{YOUR_USERNAME}/files/*
+rm -rf /home/{YOUR_USERNAME}/telegram-saver-bot/files/*
 ```
 
 ## Database of users and mailing
