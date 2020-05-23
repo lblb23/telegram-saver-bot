@@ -3,6 +3,7 @@ import argparse
 import logging
 import time
 
+import instaloader
 import yaml
 from chatbase import Message
 from telegram.ext import (
@@ -21,7 +22,7 @@ from utils import (
     send_youtube_button,
     handle_youtube_button,
     send_error_message,
-    send_unsupported_message
+    send_unsupported_message,
 )
 
 # Mac OS SSL problem
@@ -51,6 +52,18 @@ logger = logging.getLogger(__name__)
 query = Query()
 db_users = TinyDB("db_users.json")
 messages = config["messages"]
+
+L = instaloader.Instaloader(
+    sleep=True,
+    download_geotags=False,
+    filename_pattern="{shortcode}",
+    quiet=False,
+    download_video_thumbnails=False,
+    download_comments=False,
+)
+
+if config["authorization"]:
+    L.load_session_from_file(config["login"])
 
 
 def main():
@@ -91,7 +104,13 @@ def handle_message(update, context):
         if check_instagram(url):
             platform = "Instagram"
             if config["handle_instagram"]:
-                result, traceback = send_instagram_data(context, chat_id, url, messages)
+                result, traceback = send_instagram_data(
+                    insta_context=L,
+                    context=context,
+                    chat_id=chat_id,
+                    url=url,
+                    messages=messages,
+                )
             else:
                 result, traceback = send_unsupported_message(
                     context, chat_id, messages, platform
@@ -100,7 +119,7 @@ def handle_message(update, context):
             platform = "YouTube"
             if config["handle_youtube"]:
                 result, traceback = send_youtube_button(context, chat_id, url, messages)
-                #result, traceback = send_youtube_data(context, chat_id, url, messages)
+                # result, traceback = send_youtube_data(context, chat_id, url, messages)
             else:
                 result, traceback = send_unsupported_message(
                     context, chat_id, messages, platform

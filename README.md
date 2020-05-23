@@ -42,6 +42,19 @@ You can send a message to all your users with this command:
 python3 mailing_users.py --message "YOUR MESSAGE"
 ```
 
+## Instagram Authorization 
+
+If you are not authorized, then over time Instagram will redirect you to the page with authorization, so the bot will be unstable.
+
+How auth:
+1. Generate *cookies.sqllite* with Firefox. Manual: https://instaloader.github.io/troubleshooting.html
+2. Copy *cookies.sqllite* to repo
+3. Run
+```
+python3 generate_cookies.py
+```
+4. In *config.yml* change authorization to True and insert your login.
+
 ## Main requirements
 
 * [instaloader](https://github.com/instaloader/instaloader)

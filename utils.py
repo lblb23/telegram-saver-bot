@@ -1,11 +1,9 @@
 import os
 import random
+import re
 from shutil import rmtree
 
-import instaloader
-import requests
-from bs4 import BeautifulSoup
-from instaloader import Post
+from instaloader import Post, Instaloader
 from pytube import YouTube
 from telegram import (
     Update,
@@ -15,15 +13,6 @@ from telegram import (
     InlineKeyboardMarkup,
 )
 from telegram.ext import CallbackContext
-
-L = instaloader.Instaloader(
-    sleep=True,
-    download_geotags=False,
-    filename_pattern="{shortcode}",
-    quiet=False,
-    download_video_thumbnails=False,
-    download_comments=False,
-)
 
 resolutions = ["144p", "240p", "360p", "480p", "720p", "1080p"]
 
@@ -64,16 +53,15 @@ def get_insta_shortcode(url: str) -> str:
     :param url: URL
     :return: shortcode of post
     """
-    r = requests.get(url)
-
-    parsed_html = BeautifulSoup(r.text)
-    a = parsed_html.find("meta", attrs={"property": "al:android:url"})
-    shortcode = a.attrs["content"].split("/")[-2]
+    shortcode = re.findall(
+        r"(?:(?:http|https):\/\/)?(?:www.)?(?:instagram.com|instagr.am)\/p\/([A-Za-z0-9-_.]+)",
+        url,
+    )[0]
 
     return shortcode
 
 
-def get_insta_links(url: str) -> tuple:
+def get_insta_links(L: Instaloader, url: str) -> tuple:
     """
     Return list of shortcodes
     :param url: URL
@@ -92,7 +80,11 @@ def get_insta_links(url: str) -> tuple:
 
 
 def send_instagram_data(
-    context: CallbackContext, chat_id: int, url: str, messages: dict
+    insta_context: Instaloader,
+    context: CallbackContext,
+    chat_id: int,
+    url: str,
+    messages: dict,
 ) -> tuple:
     """
     Send instagram data to user with chat_id
@@ -102,11 +94,11 @@ def send_instagram_data(
     4. If post contains 0 nodes - it's can be video, try to send video
     :param context: callback context
     :param chat_id: chat id with user
-    :param url: messsage from user
+    :param url: messsage from usersend_instagram_data
     :param messages: dict with templates of messages
     :return: success status and reason if failed
     """
-    flag, post = get_insta_links(url)
+    flag, post = get_insta_links(L=insta_context, url=url)
 
     contents = []
 

@@ -18,17 +18,6 @@ messages:
 handle_instagram: True
 handle_youtube: False
 
-# Try to store users on mysql database
-# Not working
-mysql_host: <value>
-mysql_port: <value>
-mysql_user: <value>
-mysql_pass: <value>
-mysql_dbname: <value>
-mysql_table: <value>
-
-use_ssh: <value>
-ssh_host: <value>
-ssh_user: <value>
-ssh_pass: <value>
-forward_port: <value>
+# Authorization
+authorization: False
+login: None
