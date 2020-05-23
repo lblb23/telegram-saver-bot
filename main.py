@@ -23,6 +23,7 @@ from utils import (
     handle_youtube_button,
     send_error_message,
     send_unsupported_message,
+    send_limit_message,
 )
 
 # Mac OS SSL problem
@@ -51,7 +52,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 query = Query()
 db_users = TinyDB("db_users.json")
+db_limits = TinyDB("db_users_limits.json")
 messages = config["messages"]
+messages_limit = config["messages_limit"]
 
 L = instaloader.Instaloader(
     sleep=True,
@@ -101,32 +104,43 @@ def handle_message(update, context):
         chat_id = update.message.chat.id
         url = update.message.text
 
-        if check_instagram(url):
-            platform = "Instagram"
-            if config["handle_instagram"]:
-                result, traceback = send_instagram_data(
-                    insta_context=L,
-                    context=context,
-                    chat_id=chat_id,
-                    url=url,
-                    messages=messages,
-                )
+        count_messages = len(db_limits.search(query.user == username))
+
+        if count_messages <= messages_limit:
+            context.bot.send_message(
+                chat_id=chat_id,
+                text=messages["loading"].format(count_messages, messages_limit),
+            )
+            if check_instagram(url):
+                platform = "Instagram"
+                if config["handle_instagram"]:
+                    result, traceback = send_instagram_data(
+                        insta_context=L,
+                        context=context,
+                        chat_id=chat_id,
+                        url=url,
+                        messages=messages,
+                    )
+                else:
+                    result, traceback = send_unsupported_message(
+                        context, chat_id, messages, platform
+                    )
+            elif check_youtube(url):
+                platform = "YouTube"
+                if config["handle_youtube"]:
+                    result, traceback = send_youtube_button(
+                        context, chat_id, url, messages
+                    )
+                    # result, traceback = send_youtube_data(context, chat_id, url, messages)
+                else:
+                    result, traceback = send_unsupported_message(
+                        context, chat_id, messages, platform
+                    )
             else:
-                result, traceback = send_unsupported_message(
-                    context, chat_id, messages, platform
-                )
-        elif check_youtube(url):
-            platform = "YouTube"
-            if config["handle_youtube"]:
-                result, traceback = send_youtube_button(context, chat_id, url, messages)
-                # result, traceback = send_youtube_data(context, chat_id, url, messages)
-            else:
-                result, traceback = send_unsupported_message(
-                    context, chat_id, messages, platform
-                )
+                platform = "Unknown"
+                result, traceback = send_error_message(context, chat_id, messages)
         else:
-            platform = "Unknown"
-            result, traceback = send_error_message(context, chat_id, messages)
+            result, traceback = send_limit_message(context, chat_id, messages)
 
         # Print to pythonanywhere log
         print(
@@ -153,6 +167,9 @@ def handle_message(update, context):
         user_exist = db_users.search(query.user == username)
         if len(user_exist) == 0:
             db_users.insert({"user": username, "chat_id": chat_id})
+
+        # Count messages from user
+        db_limits.insert({"user": username})
 
 
 if __name__ == "__main__":
