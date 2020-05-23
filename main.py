@@ -35,10 +35,16 @@ parser.add_argument(
     "--config_path", default="config.yml", dest="config_path", help="Path to config"
 )
 parser.add_argument(
-    "--db_users", default="db_users.json", dest="db_users_path", help="Path to database of users"
+    "--db_users",
+    default="db_users.json",
+    dest="db_users_path",
+    help="Path to database of users",
 )
 parser.add_argument(
-    "--db_users_limits", default="db_users_limits.json", dest="db_users_limits_path", help="Path to database of limits"
+    "--db_users_limits",
+    default="db_users_limits.json",
+    dest="db_users_limits_path",
+    help="Path to database of limits",
 )
 
 args = parser.parse_args()
@@ -114,6 +120,9 @@ def handle_message(update, context):
         chat_id = update.message.chat.id
         url = update.message.text
 
+        # Count messages from user
+        db_limits.insert({"user": username})
+
         count_messages = len(db_limits.search(query.user == username))
 
         if count_messages <= messages_limit:
@@ -177,9 +186,6 @@ def handle_message(update, context):
         user_exist = db_users.search(query.user == username)
         if len(user_exist) == 0:
             db_users.insert({"user": username, "chat_id": chat_id})
-
-        # Count messages from user
-        db_limits.insert({"user": username})
 
 
 if __name__ == "__main__":
