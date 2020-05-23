@@ -60,7 +60,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 query = Query()
 db_users = TinyDB(db_users_path)
-db_limits = TinyDB(db_users_limits_path)
 messages = config["messages"]
 messages_limit = config["messages_limit"]
 
@@ -108,6 +107,9 @@ def button(update, context):
 def handle_message(update, context):
 
     if update.message:
+
+        db_limits = TinyDB(db_users_limits_path)
+
         username = update.message.from_user.name
         chat_id = update.message.chat.id
         url = update.message.text
