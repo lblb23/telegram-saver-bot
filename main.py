@@ -34,9 +34,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     "--config_path", default="config.yml", dest="config_path", help="Path to config"
 )
+parser.add_argument(
+    "--db_users", default="db_users.json", dest="db_users_path", help="Path to database of users"
+)
+parser.add_argument(
+    "--db_users_limits", default="db_users_limits.json", dest="db_users_limits_path", help="Path to database of limits"
+)
 
 args = parser.parse_args()
 config_path = args.config_path
+db_users_path = args.db_users_path
+db_users_limits_path = args.db_users_limits_path
 
 with open(config_path) as file:
     config = yaml.load(file, Loader=yaml.FullLoader)
@@ -51,8 +59,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 query = Query()
-db_users = TinyDB("db_users.json")
-db_limits = TinyDB("db_users_limits.json")
+db_users = TinyDB(db_users_path)
+db_limits = TinyDB(db_users_limits_path)
 messages = config["messages"]
 messages_limit = config["messages_limit"]
 

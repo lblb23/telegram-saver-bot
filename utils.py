@@ -29,7 +29,7 @@ def check_instagram(url: str) -> bool:
     :param url: URL
     :return: True if url from instagram else False
     """
-    if "instagram.com" in url:
+    if "instagram.com" in url or "instagr.am" in url:
         return True
     else:
         return False
