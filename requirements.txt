@@ -2,7 +2,7 @@
 
 # telegram_saver_bot/mailing_users.py: 5
 # telegram_saver_bot/main.py: 6
-PyYAML == 5.3.1
+PyYAML == 5.4
 
 # telegram_saver_bot/utils.py: 7
 beautifulsoup4 == 4.7.1
